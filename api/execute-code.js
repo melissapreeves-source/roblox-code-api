@@ -1,8 +1,6 @@
-// Simple in-memory storage (will work better than before)
-const pendingCodes = new Map();
+import { createClient } from '@vercel/edge-config';
 
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,23 +20,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Store the code
+    const edgeConfig = createClient(process.env.EDGE_CONFIG);
     const executionId = Date.now().toString() + Math.random().toString(36);
-    pendingCodes.set(executionId, {
+    
+    // Get existing codes
+    const existing = await edgeConfig.get('pendingCodes') || {};
+    
+    // Add new code
+    existing[executionId] = {
       username: username.toLowerCase(),
       code: code,
       timestamp: Date.now(),
       executed: false
-    });
-
-    // Clean up old entries (older than 5 minutes)
-    for (const [id, data] of pendingCodes.entries()) {
-      if (Date.now() - data.timestamp > 300000) {
-        pendingCodes.delete(id);
-      }
-    }
-
-    console.log(`Stored code for ${username}. Total pending: ${pendingCodes.size}`);
+    };
+    
+    // Save back
+    await edgeConfig.set('pendingCodes', existing);
     
     return res.status(200).json({ 
       success: true, 
@@ -50,6 +47,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
-
-// Export for get-code endpoint to use
-export { pendingCodes };
