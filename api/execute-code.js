@@ -19,12 +19,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import Edge Config correctly
-    const { createClient } = await import('@vercel/edge-config');
-    const edgeConfig = createClient(process.env.EDGE_CONFIG);
+    // Correct Edge Config import and usage
+    const { get, set } = require('@vercel/edge-config');
     
     // Get existing codes
-    let pendingCodes = await edgeConfig.get('pendingCodes');
+    let pendingCodes = await get('pendingCodes');
     if (!pendingCodes) {
       pendingCodes = {};
     }
@@ -38,10 +37,8 @@ export default async function handler(req, res) {
       executed: false
     };
     
-    // Save back using the correct method
-    await edgeConfig.set('pendingCodes', pendingCodes);
-    
-    console.log(`✅ Stored code for ${username}`);
+    // Save back using set function
+    await set('pendingCodes', pendingCodes);
     
     return res.status(200).json({ 
       success: true, 
