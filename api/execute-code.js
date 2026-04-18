@@ -1,13 +1,11 @@
 export default async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
@@ -21,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import Edge Config
+    // Import Edge Config correctly
     const { createClient } = await import('@vercel/edge-config');
     const edgeConfig = createClient(process.env.EDGE_CONFIG);
     
@@ -40,10 +38,10 @@ export default async function handler(req, res) {
       executed: false
     };
     
-    // Save back to Edge Config
+    // Save back using the correct method
     await edgeConfig.set('pendingCodes', pendingCodes);
     
-    console.log(`✅ Stored code for ${username}. Total: ${Object.keys(pendingCodes).length}`);
+    console.log(`✅ Stored code for ${username}`);
     
     return res.status(200).json({ 
       success: true, 
