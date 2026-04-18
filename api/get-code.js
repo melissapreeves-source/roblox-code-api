@@ -1,3 +1,5 @@
+import { pendingCodes } from './execute-code.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -17,13 +19,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!global.pendingExecutions) {
-      return res.status(200).json({ hasCode: false });
-    }
-
+    const usernameLower = username.toLowerCase();
     let foundCode = null;
-    for (const [id, data] of global.pendingExecutions.entries()) {
-      if (data.username === username && !data.executed) {
+    
+    // Find pending code for this username
+    for (const [id, data] of pendingCodes.entries()) {
+      if (data.username === usernameLower && !data.executed) {
         data.executed = true;
         foundCode = { id, code: data.code };
         break;
@@ -31,6 +32,7 @@ export default async function handler(req, res) {
     }
 
     if (foundCode) {
+      console.log(`Sending code to ${username}, code length: ${foundCode.code.length}`);
       return res.status(200).json({ 
         hasCode: true, 
         code: foundCode.code,
