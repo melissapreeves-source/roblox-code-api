@@ -2,6 +2,6 @@
   "name": "roblox-code-api",
   "version": "1.0.0",
   "dependencies": {
-    "@vercel/edge-config": "^0.1.0"
+    "@vercel/edge-config": "^1.0.0"
   }
 }
