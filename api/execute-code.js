@@ -1,36 +1,36 @@
-export default async function handler(req, res) {
+export default function handler(req, res) {
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-
+  
+  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { username, code } = req.body;
 
-  // Simple in-memory storage that actually works between calls
+  if (!username || !code) {
+    return res.status(400).json({ error: 'Username and code are required' });
+  }
+
+  // Simple storage
   if (!global.codes) global.codes = {};
   
   const executionId = Date.now().toString();
   global.codes[username.toLowerCase()] = {
     code: code,
-    timestamp: Date.now(),
-    id: executionId
+    timestamp: Date.now()
   };
-  
-  // Clean old entries
-  for (const user in global.codes) {
-    if (Date.now() - global.codes[user].timestamp > 30000) {
-      delete global.codes[user];
-    }
-  }
-  
-  return res.status(200).json({ success: true, executionId });
-}
 
-export { global };
+  return res.status(200).json({ 
+    success: true, 
+    executionId: executionId 
+  });
+}
