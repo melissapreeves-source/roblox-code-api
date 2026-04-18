@@ -1,12 +1,4 @@
-import { createClient } from '@vercel/redis';
-
-// Create Redis client
-const redis = createClient({
-  url: process.env.REDIS_URL
-});
-
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -21,25 +13,24 @@ export default async function handler(req, res) {
 
   const { username, code } = req.body;
 
-  if (!username || !code) {
-    return res.status(400).json({ error: 'Username and code are required' });
+  // Simple in-memory storage that actually works between calls
+  if (!global.codes) global.codes = {};
+  
+  const executionId = Date.now().toString();
+  global.codes[username.toLowerCase()] = {
+    code: code,
+    timestamp: Date.now(),
+    id: executionId
+  };
+  
+  // Clean old entries
+  for (const user in global.codes) {
+    if (Date.now() - global.codes[user].timestamp > 30000) {
+      delete global.codes[user];
+    }
   }
-
-  try {
-    const key = `code:${username.toLowerCase()}`;
-    
-    // Store code with 60 second expiration
-    await redis.set(key, code);
-    await redis.expire(key, 60);
-    
-    console.log(`✅ Stored code for ${username}`);
-    
-    return res.status(200).json({ 
-      success: true, 
-      message: `Code stored for ${username}`
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    return res.status(500).json({ error: error.message });
-  }
+  
+  return res.status(200).json({ success: true, executionId });
 }
+
+export { global };
