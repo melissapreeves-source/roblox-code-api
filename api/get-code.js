@@ -19,12 +19,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import Edge Config correctly
-    const { createClient } = await import('@vercel/edge-config');
-    const edgeConfig = createClient(process.env.EDGE_CONFIG);
+    // Correct Edge Config import
+    const { get, set } = require('@vercel/edge-config');
     
     // Get pending codes
-    let pendingCodes = await edgeConfig.get('pendingCodes');
+    let pendingCodes = await get('pendingCodes');
     if (!pendingCodes) {
       pendingCodes = {};
     }
@@ -45,15 +44,13 @@ export default async function handler(req, res) {
     
     // Save the updated status back
     if (foundCode) {
-      await edgeConfig.set('pendingCodes', pendingCodes);
-      console.log(`📤 Sent code to ${username}`);
+      await set('pendingCodes', pendingCodes);
       return res.status(200).json({ 
         hasCode: true, 
         code: foundCode,
         executionId: foundId
       });
     } else {
-      console.log(`📭 No code for ${username}`);
       return res.status(200).json({ hasCode: false });
     }
   } catch (error) {
