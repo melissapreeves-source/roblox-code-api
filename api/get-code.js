@@ -1,4 +1,4 @@
-import { pendingCodes } from './execute-code.js';
+import { createClient } from '@vercel/edge-config';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,24 +19,30 @@ export default async function handler(req, res) {
   }
 
   try {
+    const edgeConfig = createClient(process.env.EDGE_CONFIG);
+    const pendingCodes = await edgeConfig.get('pendingCodes') || {};
+    
     const usernameLower = username.toLowerCase();
     let foundCode = null;
+    let foundId = null;
     
-    // Find pending code for this username
-    for (const [id, data] of pendingCodes.entries()) {
+    // Find pending code
+    for (const [id, data] of Object.entries(pendingCodes)) {
       if (data.username === usernameLower && !data.executed) {
+        foundCode = data.code;
+        foundId = id;
         data.executed = true;
-        foundCode = { id, code: data.code };
         break;
       }
     }
-
+    
+    // Update if we found code
     if (foundCode) {
-      console.log(`Sending code to ${username}, code length: ${foundCode.code.length}`);
+      await edgeConfig.set('pendingCodes', pendingCodes);
       return res.status(200).json({ 
         hasCode: true, 
-        code: foundCode.code,
-        executionId: foundCode.id
+        code: foundCode,
+        executionId: foundId
       });
     } else {
       return res.status(200).json({ hasCode: false });
